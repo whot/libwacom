@@ -225,7 +225,7 @@ int main(int argc, char **argv)
 {
 	int rc = 1;
 	WacomDeviceDatabase *db = NULL;
-	g_autofree char *dirname = strdup("tmp.dbverify.XXXXXX");
+	g_autofree char *dirname = g_strdup("tmp.dbverify.XXXXXX");
 
 	g_test_init(&argc, &argv, NULL);
 	g_test_set_nonfatal_assertions();
