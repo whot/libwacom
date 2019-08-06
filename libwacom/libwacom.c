@@ -149,12 +149,13 @@ static char *
 get_bus (GUdevDevice *device)
 {
 	const char *subsystem;
-	char *bus_str;
+	const char *bus_str;
+	char *uinput_str;
 	g_autoptr(GUdevDevice) parent = NULL;
 
-	bus_str = get_uinput_subsystem (device);
-	if (bus_str)
-		return bus_str;
+	uinput_str = get_uinput_subsystem (device);
+	if (uinput_str)
+		return uinput_str;
 
 	subsystem = g_udev_device_get_subsystem (device);
 	parent = g_object_ref (device);
@@ -169,13 +170,13 @@ get_bus (GUdevDevice *device)
 
 	if (parent) {
 		if (subsystem && (streq(subsystem, "tty") || streq(subsystem, "serio")))
-			bus_str = g_strdup ("serial");
+			bus_str = "serial";
 		else
-			bus_str = g_strdup (subsystem);
+			bus_str = subsystem;
 	} else
-		bus_str = strdup("unknown");
+		bus_str = "unknown";
 
-	return bus_str;
+	return g_strdup(bus_str);
 }
 
 static gboolean
