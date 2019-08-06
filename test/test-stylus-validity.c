@@ -276,9 +276,9 @@ setup_tests(const WacomStylus *stylus)
 static const WacomStylus **
 assemble_styli(WacomDeviceDatabase *db)
 {
-	WacomDevice **devices = libwacom_list_devices_from_database(db, NULL);
+	g_autofree WacomDevice **devices = libwacom_list_devices_from_database(db, NULL);
 	const WacomStylus **styli;
-	int *ids = NULL;
+	g_autofree int *ids = NULL;
 	int nids = 0;
 	int sz = 0;
 
@@ -319,8 +319,6 @@ assemble_styli(WacomDeviceDatabase *db)
 		g_assert(styli[i]);
 	}
 
-	free(devices);
-	free(ids);
 	return styli;
 }
 

@@ -83,8 +83,8 @@ verify_has_class (xmlNodePtr cur, const gchar *expected)
 {
 
 	xmlChar *prop;
-	gchar  **classes_present;
-	gchar  **classes_expected;
+	g_auto(GStrv) classes_present = NULL;
+	g_auto(GStrv) classes_expected = NULL;
 	gchar  **ptr;
 
 	prop = xmlGetProp (cur, (xmlChar *) "class");
@@ -98,16 +98,14 @@ verify_has_class (xmlNodePtr cur, const gchar *expected)
 	while (*ptr)
 		g_assert (class_found (classes_present, *ptr++));
 
-	g_strfreev (classes_present);
-	g_strfreev (classes_expected);
 	xmlFree (prop);
 }
 
 static void
 check_button (xmlNodePtr cur, const WacomDevice *device, char button, gchar *type)
 {
-	char             *sub;
-	char             *class;
+	g_autofree char  *sub;
+	g_autofree char  *class;
 	xmlNodePtr        node;
 	WacomButtonFlags  flags;
 
@@ -115,7 +113,6 @@ check_button (xmlNodePtr cur, const WacomDevice *device, char button, gchar *typ
 	sub = g_strdup_printf ("%s%c", type, button);
 	node = verify_has_sub (cur, sub);
 	g_assert (node != NULL);
-	g_free (sub);
 
 	/* Check class */
 	flags = libwacom_get_button_flag(device, button);
@@ -124,7 +121,6 @@ check_button (xmlNodePtr cur, const WacomDevice *device, char button, gchar *typ
 	else
 		class = g_strdup_printf ("%c %s", button, type);
 	verify_has_class (node, class);
-	g_free (class);
 }
 
 static void
@@ -405,7 +401,7 @@ load_database(void)
 int main(int argc, char **argv)
 {
 	WacomDeviceDatabase *db;
-	WacomDevice **devices;
+	g_autofree WacomDevice **devices;
 	int rc;
 
         g_test_init(&argc, &argv, NULL);
@@ -421,7 +417,6 @@ int main(int argc, char **argv)
 
 	rc = g_test_run();
 
-	free(devices);
 	libwacom_database_destroy (db);
 
 	return rc;

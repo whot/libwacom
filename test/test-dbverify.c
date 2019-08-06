@@ -53,28 +53,27 @@ static void
 rmtmpdir(const char *dir)
 {
 	int nfiles;
-	struct dirent **files;
-	char *path = NULL;
+	g_autofree struct dirent **files;
 
 	nfiles = scandir(dir, &files, scandir_filter, alphasort);
 	while(nfiles--)
 	{
+		g_autofree char *path = NULL;
 		g_assert(asprintf(&path, "%s/%s", dir, files[nfiles]->d_name) != -1);
 		g_assert(path);
 		g_assert(remove(path) != -1);
 		free(files[nfiles]);
-		free(path);
 		path = NULL;
 	}
 
-	free(files);
 	g_assert(remove(dir) != -1);
 }
 
 static void
 find_matching(gconstpointer data)
 {
-	WacomDevice **devs_old, **devs_new;
+	g_autofree WacomDevice **devs_old = NULL,
+			       **devs_new = NULL;
 	WacomDevice **devices, **d;
 	WacomDevice *other;
 	gboolean found = FALSE;
@@ -107,16 +106,13 @@ find_matching(gconstpointer data)
 		}
 	}
 	g_assert_true(found);
-
-	free(devs_old);
-	free(devs_new);
 }
 
 static void
 test_database_size(void)
 {
 	int sz1, sz2;
-	WacomDevice **d1, **d2;
+	g_autofree WacomDevice **d1 = NULL, **d2 = NULL;
 
 	d1 = libwacom_list_devices_from_database(db_old, NULL);
 	d2 = libwacom_list_devices_from_database(db_new, NULL);
@@ -130,16 +126,14 @@ test_database_size(void)
 	for (WacomDevice **d = d2; *d; d++)
 		sz2++;
 	g_assert_cmpint(sz1, ==, sz2);
-
-	free(d1);
-	free(d2);
 }
 
 static int
 compare_databases(WacomDeviceDatabase *orig, WacomDeviceDatabase *new)
 {
-	int i, rc;
-	WacomDevice **devs_new, **n;
+	int i;
+	g_autofree WacomDevice **devs_new;
+	WacomDevice **n;
 
 	g_test_add_func("/dbverify/database-sizes", test_database_size);
 
@@ -159,16 +153,15 @@ compare_databases(WacomDeviceDatabase *orig, WacomDeviceDatabase *new)
 		g_test_add_data_func(buf, GINT_TO_POINTER(i), find_matching);
 	}
 
-	rc = g_test_run();
-	free(devs_new);
-	return rc;
+	return g_test_run();
 }
 
 /* write out the current db, read it back in, compare */
 static void
 duplicate_database(WacomDeviceDatabase *db, const char *dirname)
 {
-	WacomDevice **device, **devices;
+	g_autofree WacomDevice **devices = NULL;
+	WacomDevice **device;
 	int i;
 
 	devices = libwacom_list_devices_from_database(db, NULL);
@@ -178,7 +171,7 @@ duplicate_database(WacomDeviceDatabase *db, const char *dirname)
 	for (device = devices, i = 0; *device; device++, i++) {
 		int i;
 		int fd;
-		char *path = NULL;
+		g_autofree char *path = NULL;
 		int nstyli;
 		const int *styli;
 
@@ -189,13 +182,13 @@ duplicate_database(WacomDeviceDatabase *db, const char *dirname)
 		g_assert(fd >= 0);
 		libwacom_print_device_description(fd, *device);
 		close(fd);
-		free(path);
 
 		if (!libwacom_has_stylus(*device))
 			continue;
 
 		styli = libwacom_get_supported_styli(*device, &nstyli);
 		for (i = 0; i < nstyli; i++) {
+			g_autofree char *path = NULL;
 			int fd_stylus;
 			const WacomStylus *stylus;
 
@@ -206,11 +199,8 @@ duplicate_database(WacomDeviceDatabase *db, const char *dirname)
 			g_assert(fd_stylus >= 0);
 			libwacom_print_stylus_description(fd_stylus, stylus);
 			close(fd_stylus);
-			free(path);
 		}
 	}
-
-	free(devices);
 }
 
 static WacomDeviceDatabase *
@@ -233,16 +223,15 @@ load_database(void)
 
 int main(int argc, char **argv)
 {
-	WacomDeviceDatabase *db;
-	char *dirname;
-	int rc;
+	int rc = 1;
+	WacomDeviceDatabase *db = NULL;
+	g_autofree char *dirname = strdup("tmp.dbverify.XXXXXX");
 
 	g_test_init(&argc, &argv, NULL);
 	g_test_set_nonfatal_assertions();
 
 	db = load_database();
 
-	dirname = strdup("tmp.dbverify.XXXXXX");
 	g_assert(mkdtemp(dirname)); /* just check for non-null to avoid
 				       Coverity complaints */
 
@@ -256,7 +245,6 @@ int main(int argc, char **argv)
 	libwacom_database_destroy(db_old);
 
 	rmtmpdir(dirname);
-	free(dirname);
 
 	return rc;
 }
