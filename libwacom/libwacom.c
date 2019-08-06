@@ -182,7 +182,7 @@ static gboolean
 get_device_info (const char            *path,
 		 int                   *vendor_id,
 		 int                   *product_id,
-		 char                 **name,
+		 char                 **name_return,
 		 WacomBusType          *bus,
 		 WacomIntegrationFlags *integration_flags,
 		 WacomError            *error)
@@ -193,6 +193,7 @@ get_device_info (const char            *path,
 	gboolean retval;
 	g_autofree char *bus_str = NULL;
 	const char *devname;
+	g_autofree char *name = NULL;
 
 #if NEED_G_TYPE_INIT
 	g_type_init();
@@ -201,12 +202,12 @@ get_device_info (const char            *path,
 	retval = FALSE;
 	/* The integration flags from device info are unset by default */
 	*integration_flags = WACOM_DEVICE_INTEGRATED_UNSET;
-	*name = NULL;
+	*name_return = NULL;
 	client = g_udev_client_new (subsystems);
 	device = g_udev_client_query_by_device_file (client, path);
 	if (device == NULL) {
 		libwacom_error_set(error, WERROR_INVALID_PATH, "Could not find device '%s' in udev", path);
-		goto out;
+		return retval;
 	}
 
 	/* Touchpads are only for the "Finger" part of Bamboo devices */
@@ -216,7 +217,7 @@ get_device_info (const char            *path,
 		parent = g_udev_device_get_parent(device);
 		if (!parent || !is_tablet_or_touchpad(parent)) {
 			libwacom_error_set(error, WERROR_INVALID_PATH, "Device '%s' is not a tablet", path);
-			goto out;
+			return retval;
 		}
 	}
 
@@ -245,28 +246,28 @@ get_device_info (const char            *path,
 		}
 	}
 
-	*name = g_strdup (g_udev_device_get_sysfs_attr (device, "name"));
+	name = g_strdup (g_udev_device_get_sysfs_attr (device, "name"));
 	/* Try getting the name from the parent if that fails */
-	if (*name == NULL) {
+	if (name == NULL) {
 		g_autoptr(GUdevDevice) parent;
 
 		parent = g_udev_device_get_parent (device);
 		if (!parent)
-			goto out;
-		*name = g_strdup (g_udev_device_get_sysfs_attr (parent, "name"));
+			return retval;
+		name = g_strdup (g_udev_device_get_sysfs_attr (parent, "name"));
 	}
 
 	/* Parse the PRODUCT attribute (for Bluetooth, USB, I2C) */
 	retval = get_bus_vid_pid (device, bus, vendor_id, product_id, error);
 	if (retval)
-		goto out;
+		return retval;
 
 	bus_str = get_bus (device);
 	*bus = bus_from_str (bus_str);
 
 	if (*bus == WBUSTYPE_SERIAL) {
 		if (is_touchpad (device))
-			goto out;
+			return retval;
 
 		/* The serial bus uses 0:0 as the vid/pid */
 		*vendor_id = 0;
@@ -276,9 +277,8 @@ get_device_info (const char            *path,
 		libwacom_error_set(error, WERROR_UNKNOWN_MODEL, "Unsupported bus '%s'", bus_str);
 	}
 
-out:
-	if (retval == FALSE)
-		g_free (*name);
+	*name_return = name;
+	name = NULL;
 	return retval;
 }
 
