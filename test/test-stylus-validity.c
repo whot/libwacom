@@ -294,7 +294,7 @@ assemble_styli(WacomDeviceDatabase *db)
 		   all new styli. Simpler than reallocing after every entry */
 		if (nstyli > sz - nids) {
 			sz = nids + nstyli;
-			ids = realloc(ids, sz * sizeof(*ids));
+			ids = reallocarray(ids, sz, sizeof(*ids));
 			g_assert(ids);
 		}
 
