@@ -191,7 +191,6 @@ get_device_info (const char            *path,
 	g_autoptr(GUdevDevice) device = NULL;
 	const char * const subsystems[] = { "input", NULL };
 	gboolean retval;
-	g_autofree char *bus_str = NULL;
 	const char *devname;
 	g_autofree char *name = NULL;
 
@@ -259,22 +258,22 @@ get_device_info (const char            *path,
 
 	/* Parse the PRODUCT attribute (for Bluetooth, USB, I2C) */
 	retval = get_bus_vid_pid (device, bus, vendor_id, product_id, error);
-	if (retval)
-		return retval;
+	if (!retval) {
+		g_autofree char *bus_str = get_bus (device);
 
-	bus_str = get_bus (device);
-	*bus = bus_from_str (bus_str);
+		*bus = bus_from_str (bus_str);
 
-	if (*bus == WBUSTYPE_SERIAL) {
-		if (is_touchpad (device))
-			return retval;
+		if (*bus == WBUSTYPE_SERIAL) {
+			if (is_touchpad (device))
+				return retval;
 
-		/* The serial bus uses 0:0 as the vid/pid */
-		*vendor_id = 0;
-		*product_id = 0;
-		retval = TRUE;
-	} else {
-		libwacom_error_set(error, WERROR_UNKNOWN_MODEL, "Unsupported bus '%s'", bus_str);
+			/* The serial bus uses 0:0 as the vid/pid */
+			*vendor_id = 0;
+			*product_id = 0;
+			retval = TRUE;
+		} else {
+			libwacom_error_set(error, WERROR_UNKNOWN_MODEL, "Unsupported bus '%s'", bus_str);
+		}
 	}
 
 	*name_return = name;
