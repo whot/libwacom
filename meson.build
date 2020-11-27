@@ -274,7 +274,10 @@ if get_option('tests').enabled()
 
 	if meson.version().version_compare('>= 0.51.0')
 		python = import('python')
-		python.find_installation(modules: ['libevdev', 'pyudev', 'pytest'])
+		python.find_installation()
+		python.find_installation(modules: ['pyudev'])
+		python.find_installation(modules: ['pytest'])
+		python.find_installation(modules: ['libevdev'])
 	endif
 	pytest = find_program('pytest-3', 'pytest')
 	test('pytest',
