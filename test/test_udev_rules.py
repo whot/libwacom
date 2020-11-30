@@ -16,6 +16,7 @@ import pyudev
 import pytest
 import time
 import logging
+import sys
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -111,6 +112,7 @@ def uinput(tablet):
         raise pytest.skip()
 
 
+@pytest.mark.skipif(sys.platform != 'linux', reason='This test requires udev')
 def test_hwdb_files(uinput):
     logging.debug('{:04x}:{:04x} {}'.format(uinput.id['vendor'], uinput.id['product'], uinput.name))
     udev = pyudev.Context()
