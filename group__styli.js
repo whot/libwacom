@@ -1,5 +1,7 @@
 var group__styli =
 [
+    [ "WACOM_ERASER_FALLBACK_ID", "group__styli.html#ga4b33c048325754b96427f875c14b7b8b", null ],
+    [ "WACOM_STYLUS_FALLBACK_ID", "group__styli.html#gaeccd5cc1b23f89f1f97b0446bfff110b", null ],
     [ "WacomStylus", "group__styli.html#gade7dd5ce503ef37813e5f08bf1544170", null ],
     [ "WacomAxisTypeFlags", "group__styli.html#gaeef7d6526953f4e1a268346dafdd204f", [
       [ "WACOM_AXIS_TYPE_NONE", "group__styli.html#ggaeef7d6526953f4e1a268346dafdd204fa1c88621d522f89637b6a72c40c256abf", null ],

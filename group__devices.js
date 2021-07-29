@@ -1,7 +1,5 @@
 var group__devices =
 [
-    [ "WACOM_ERASER_FALLBACK_ID", "group__devices.html#ga4b33c048325754b96427f875c14b7b8b", null ],
-    [ "WACOM_STYLUS_FALLBACK_ID", "group__devices.html#gaeccd5cc1b23f89f1f97b0446bfff110b", null ],
     [ "WacomDevice", "group__devices.html#gadbb6667e3d45b58fb0e269dd435c29cb", null ],
     [ "WacomMatch", "group__devices.html#gad9598829a59951a74f91c640a01f2fad", null ],
     [ "WacomBusType", "group__devices.html#gac2fa165c0691b65d55f46eabdd02c96e", [

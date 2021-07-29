@@ -1,8 +1,8 @@
 var libwacom_8h =
 [
     [ "LIBWACOM_DEPRECATED", "libwacom_8h.html#ac36e8235910429091f20b3503c40d173", null ],
-    [ "WACOM_ERASER_FALLBACK_ID", "group__devices.html#ga4b33c048325754b96427f875c14b7b8b", null ],
-    [ "WACOM_STYLUS_FALLBACK_ID", "group__devices.html#gaeccd5cc1b23f89f1f97b0446bfff110b", null ],
+    [ "WACOM_ERASER_FALLBACK_ID", "group__styli.html#ga4b33c048325754b96427f875c14b7b8b", null ],
+    [ "WACOM_STYLUS_FALLBACK_ID", "group__styli.html#gaeccd5cc1b23f89f1f97b0446bfff110b", null ],
     [ "WacomDevice", "group__devices.html#gadbb6667e3d45b58fb0e269dd435c29cb", null ],
     [ "WacomDeviceDatabase", "group__context.html#ga6e785a1c70f2bacb048735d2ca78f116", null ],
     [ "WacomError", "group__context.html#gad6d154a58c34d973502cfa8e50f5a148", null ],
