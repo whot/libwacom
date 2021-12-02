@@ -234,7 +234,6 @@ jobs:
       TARBALLDIR: '_tarball_dir'
       INSTALLDIR: '/tmp/libwacom/_inst'
     steps:
-      - uses: actions/checkout@v2
       - name: install python
         uses: actions/setup-python@v1
         with:
