@@ -22,10 +22,6 @@ jobs:
           - '-Db_sanitize=address,undefined -Db_lundef=false'
     steps:
       - uses: actions/checkout@v2
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
       - uses: ./.github/actions/pkginstall
         with:
           apt: $UBUNTU_PACKAGES
@@ -64,10 +60,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
       - uses: ./.github/actions/pkginstall
         with:
           apt: $UBUNTU_PACKAGES
@@ -107,10 +99,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
       # Run as sudo because we install to /etc and thus need the pip
       # packages available to root
       - uses: ./.github/actions/pkginstall
@@ -141,10 +129,6 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
       # Run as sudo because we install to /etc and thus need the pip
       # packages available to root
       - uses: ./.github/actions/pkginstall
@@ -192,10 +176,6 @@ jobs:
       INSTALLDIR: '/tmp/libwacom/_inst'
     steps:
       - uses: actions/checkout@v2
-      - name: install python
-        uses: actions/setup-python@v1
-        with:
-          python-version: '3.8'
       - uses: ./.github/actions/pkginstall
         with:
           apt: $UBUNTU_PACKAGES
