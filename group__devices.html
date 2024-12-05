@@ -127,6 +127,7 @@ Enumerations</h2></td></tr>
 <tr class="memitem:ga89b8a336b7d1d0d37659db8fe976323d" id="r_ga89b8a336b7d1d0d37659db8fe976323d"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="group__devices.html#ga89b8a336b7d1d0d37659db8fe976323d">WacomIntegrationFlags</a> { <a class="el" href="group__devices.html#gga89b8a336b7d1d0d37659db8fe976323da9b8f1d3d89a25bf5628789a8822800f1">WACOM_DEVICE_INTEGRATED_NONE</a> = 0
 , <a class="el" href="group__devices.html#gga89b8a336b7d1d0d37659db8fe976323da957fb212fda27c9a006d6121266b04f1">WACOM_DEVICE_INTEGRATED_DISPLAY</a> = (1 &lt;&lt; 0)
 , <a class="el" href="group__devices.html#gga89b8a336b7d1d0d37659db8fe976323dab5f6f55d44f18b26f0569676e1344857">WACOM_DEVICE_INTEGRATED_SYSTEM</a> = (1 &lt;&lt; 1)
+, <a class="el" href="group__devices.html#gga89b8a336b7d1d0d37659db8fe976323da2bbc04b59767fec4a150b0134dfc2f10">WACOM_DEVICE_INTEGRATED_REMOTE</a> = (1 &lt;&lt; 2)
  }</td></tr>
 <tr class="memdesc:ga89b8a336b7d1d0d37659db8fe976323d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Tablet integration.  <a href="group__devices.html#ga89b8a336b7d1d0d37659db8fe976323d">More...</a><br /></td></tr>
 <tr class="separator:ga89b8a336b7d1d0d37659db8fe976323d"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -190,6 +191,8 @@ Enumerations</h2></td></tr>
 , <a class="el" href="group__devices.html#gga18a534584fbfeb1254107b30246bcfd6a89bac8fcc84c8868918cb2bbe1ae683a">WACOM_STATUS_LED_TOUCHSTRIP</a> = 2
 , <br />
 &#160;&#160;<a class="el" href="group__devices.html#gga18a534584fbfeb1254107b30246bcfd6a2fbb178e496555ec0591548dec2e141c">WACOM_STATUS_LED_TOUCHSTRIP2</a> = 3
+, <a class="el" href="group__devices.html#gga18a534584fbfeb1254107b30246bcfd6a6ba522bc0a0141d1a364bf99cd11d42d">WACOM_STATUS_LED_DIAL</a> = 4
+, <a class="el" href="group__devices.html#gga18a534584fbfeb1254107b30246bcfd6ae6b42697e495ca937b6ca19df6eda6a3">WACOM_STATUS_LED_DIAL2</a> = 5
 <br />
  }</td></tr>
 <tr class="separator:ga18a534584fbfeb1254107b30246bcfd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -511,8 +514,12 @@ Functions</h2></td></tr>
 <p>Tablet integration. </p>
 <table class="fieldtable">
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="gga89b8a336b7d1d0d37659db8fe976323da9b8f1d3d89a25bf5628789a8822800f1" name="gga89b8a336b7d1d0d37659db8fe976323da9b8f1d3d89a25bf5628789a8822800f1"></a>WACOM_DEVICE_INTEGRATED_NONE&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="gga89b8a336b7d1d0d37659db8fe976323da957fb212fda27c9a006d6121266b04f1" name="gga89b8a336b7d1d0d37659db8fe976323da957fb212fda27c9a006d6121266b04f1"></a>WACOM_DEVICE_INTEGRATED_DISPLAY&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="gga89b8a336b7d1d0d37659db8fe976323dab5f6f55d44f18b26f0569676e1344857" name="gga89b8a336b7d1d0d37659db8fe976323dab5f6f55d44f18b26f0569676e1344857"></a>WACOM_DEVICE_INTEGRATED_SYSTEM&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="gga89b8a336b7d1d0d37659db8fe976323da957fb212fda27c9a006d6121266b04f1" name="gga89b8a336b7d1d0d37659db8fe976323da957fb212fda27c9a006d6121266b04f1"></a>WACOM_DEVICE_INTEGRATED_DISPLAY&#160;</td><td class="fielddoc"><p>The device is integrated into a display like the Wacom Cintiq series. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga89b8a336b7d1d0d37659db8fe976323dab5f6f55d44f18b26f0569676e1344857" name="gga89b8a336b7d1d0d37659db8fe976323dab5f6f55d44f18b26f0569676e1344857"></a>WACOM_DEVICE_INTEGRATED_SYSTEM&#160;</td><td class="fielddoc"><p>This flag is almost always used together with <a class="el" href="group__devices.html#gga89b8a336b7d1d0d37659db8fe976323da957fb212fda27c9a006d6121266b04f1">WACOM_DEVICE_INTEGRATED_DISPLAY</a> and indicates that the device is a built-in device such as a Wacom tablet in the screen of a laptop. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="gga89b8a336b7d1d0d37659db8fe976323da2bbc04b59767fec4a150b0134dfc2f10" name="gga89b8a336b7d1d0d37659db8fe976323da2bbc04b59767fec4a150b0134dfc2f10"></a>WACOM_DEVICE_INTEGRATED_REMOTE&#160;</td><td class="fielddoc"><p>The device is an external pad like the Wacom ExpressKey Remote. </p>
+</td></tr>
 </table>
 
 </div>
@@ -534,6 +541,8 @@ Functions</h2></td></tr>
 <tr><td class="fieldname"><a id="gga18a534584fbfeb1254107b30246bcfd6a7764f598cd2e21bea2c2162503dda5f6" name="gga18a534584fbfeb1254107b30246bcfd6a7764f598cd2e21bea2c2162503dda5f6"></a>WACOM_STATUS_LED_RING2&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="gga18a534584fbfeb1254107b30246bcfd6a89bac8fcc84c8868918cb2bbe1ae683a" name="gga18a534584fbfeb1254107b30246bcfd6a89bac8fcc84c8868918cb2bbe1ae683a"></a>WACOM_STATUS_LED_TOUCHSTRIP&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="gga18a534584fbfeb1254107b30246bcfd6a2fbb178e496555ec0591548dec2e141c" name="gga18a534584fbfeb1254107b30246bcfd6a2fbb178e496555ec0591548dec2e141c"></a>WACOM_STATUS_LED_TOUCHSTRIP2&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="gga18a534584fbfeb1254107b30246bcfd6a6ba522bc0a0141d1a364bf99cd11d42d" name="gga18a534584fbfeb1254107b30246bcfd6a6ba522bc0a0141d1a364bf99cd11d42d"></a>WACOM_STATUS_LED_DIAL&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="gga18a534584fbfeb1254107b30246bcfd6ae6b42697e495ca937b6ca19df6eda6a3" name="gga18a534584fbfeb1254107b30246bcfd6ae6b42697e495ca937b6ca19df6eda6a3"></a>WACOM_STATUS_LED_DIAL2&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 </div>
@@ -1370,7 +1379,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>non-zero if the device has a touch ring or zero otherwise</dd></dl>
-<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000003">Deprecated:</a></b></dt><dd>2.12 Use <a class="el" href="group__devices.html#gafd308796a4696c86cca0843d0ebf2223">libwacom_get_num_rings()</a> instead.</dd></dl>
+<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000004">Deprecated:</a></b></dt><dd>2.12 Use <a class="el" href="group__devices.html#gafd308796a4696c86cca0843d0ebf2223">libwacom_get_num_rings()</a> instead.</dd></dl>
 
 </div>
 </div>
@@ -1396,7 +1405,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>non-zero if the device has a second touch ring or zero otherwise</dd></dl>
-<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000004">Deprecated:</a></b></dt><dd>2.12 Use <a class="el" href="group__devices.html#gafd308796a4696c86cca0843d0ebf2223">libwacom_get_num_rings()</a> instead.</dd></dl>
+<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000005">Deprecated:</a></b></dt><dd>2.12 Use <a class="el" href="group__devices.html#gafd308796a4696c86cca0843d0ebf2223">libwacom_get_num_rings()</a> instead.</dd></dl>
 
 </div>
 </div>
@@ -1497,7 +1506,7 @@ Functions</h2></td></tr>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>non-zero if the device is built into the screen (ie a screen tablet) or zero if the device is an external tablet </dd></dl>
-<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000005">Deprecated:</a></b></dt><dd>0.7 Use <a class="el" href="group__devices.html#ga88efa2a2a569569563e81f578c7730fc">libwacom_get_integration_flags()</a> instead.</dd></dl>
+<dl class="deprecated"><dt><b><a class="el" href="deprecated.html#_deprecated000006">Deprecated:</a></b></dt><dd>0.7 Use <a class="el" href="group__devices.html#ga88efa2a2a569569563e81f578c7730fc">libwacom_get_integration_flags()</a> instead.</dd></dl>
 
 </div>
 </div>
@@ -1926,7 +1935,7 @@ Functions</h2></td></tr>
 <!-- start footer part -->
 <div id="nav-path" class="navpath"><!-- id is needed for treeview function! -->
   <ul>
-    <li class="footer">Generated on Mon Sep 2 2024 03:48:09 for libwacom by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8 </li>
+    <li class="footer">Generated on Thu Dec 5 2024 04:38:47 for libwacom by <a href="https://www.doxygen.org/index.html"><img class="footer" src="doxygen.svg" width="104" height="31" alt="doxygen"/></a> 1.9.8 </li>
   </ul>
 </div>
 </body>
