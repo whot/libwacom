@@ -239,18 +239,14 @@ get_device_prop(GUdevDevice *device, const char *propname)
 }
 
 static char *
-parse_uniq(char *uniq)
+parse_uniq(char *uniq_in)
 {
 	g_autoptr(GRegex) regex = NULL;
 	g_autoptr(GMatchInfo) match_info = NULL;
+	g_autofree char *uniq = g_steal_pointer(&uniq_in);
 
-	if (!uniq)
+	if (!uniq || strlen(uniq) == 0)
 		return NULL;
-
-	if (strlen(uniq) == 0) {
-		g_free (uniq);
-		return NULL;
-	}
 
 	/* The UCLogic kernel driver returns firmware names with form
 	 * <vendor>_<model>_<version>. Remove the version from `uniq` to avoid
@@ -259,59 +255,48 @@ parse_uniq(char *uniq)
 	g_regex_match (regex, uniq, 0, &match_info);
 
 	if (g_match_info_matches (match_info)) {
-		gchar *tmp = uniq;
-		uniq = g_match_info_fetch (match_info, 1);
-		g_free (tmp);
+		return g_match_info_fetch (match_info, 1);
+	} else {
+		return uniq;
 	}
-
-
-	return uniq;
 }
 
 static gboolean
 get_device_info (const char            *path,
-		 int                   *vendor_id,
-		 int                   *product_id,
-		 char                 **name,
-		 char                 **uniq,
-		 WacomBusType          *bus,
-		 WacomIntegrationFlags *integration_flags,
+		 int                   *vendor_id_out,
+		 int                   *product_id_out,
+		 char                 **name_out,
+		 char                 **uniq_out,
+		 WacomBusType          *bus_out,
+		 WacomIntegrationFlags *integration_flags_out,
 		 WacomError            *error)
 {
 	g_autoptr(GUdevClient) client = NULL;
 	g_autoptr(GUdevDevice) device = NULL;
 	const char * const subsystems[] = { "input", NULL };
-	gboolean retval;
-	g_autofree char *bus_str;
 	const char *devname;
+	g_autofree char *name = NULL;
+	g_autofree char *uniq = NULL;
+	WacomBusType bus = WBUSTYPE_UNKNOWN;
+	int vendor_id, product_id;
+	WacomIntegrationFlags integration_flags = WACOM_DEVICE_INTEGRATED_UNSET;
 
-	retval = FALSE;
-	/* The integration flags from device info are unset by default */
-	*integration_flags = WACOM_DEVICE_INTEGRATED_UNSET; // NOLINT: core.EnumCastOutOfRange
-	*name = NULL;
-	*uniq = NULL;
-	bus_str = NULL;
 	client = g_udev_client_new (subsystems);
 	device = client_query_by_subsystem_and_device_file (client, subsystems[0], path);
 	if (device == NULL)
 		device = g_udev_client_query_by_device_file (client, path);
 	if (device == NULL) {
 		libwacom_error_set(error, WERROR_INVALID_PATH, "Could not find device '%s' in udev", path);
-		goto out;
+		return FALSE;
 	}
 
 	/* Touchpads are only for the "Finger" part of Bamboo devices */
 	if (!is_tablet_or_touchpad(device)) {
-		GUdevDevice *parent;
-
-		parent = g_udev_device_get_parent(device);
+		g_autoptr(GUdevDevice) parent = g_udev_device_get_parent(device);
 		if (!parent || !is_tablet_or_touchpad(parent)) {
 			libwacom_error_set(error, WERROR_INVALID_PATH, "Device '%s' is not a tablet", path);
-			if (parent)
-				g_object_unref (parent);
-			goto out;
+			return FALSE;
 		}
-		g_object_unref (parent);
 	}
 
 	/* Is the device integrated in display? */
@@ -333,45 +318,44 @@ get_device_info (const char            *path,
 			 * tablets as well)
 			 */
 			if (flag == (1 << INPUT_PROP_DIRECT))
-				*integration_flags = WACOM_DEVICE_INTEGRATED_DISPLAY;
+				integration_flags = WACOM_DEVICE_INTEGRATED_DISPLAY;
 			else
-				*integration_flags = WACOM_DEVICE_INTEGRATED_NONE;
+				integration_flags = WACOM_DEVICE_INTEGRATED_NONE;
 		}
 	}
 
-	*name = get_device_prop (device, "NAME");
-	*uniq = parse_uniq(get_device_prop(device, "UNIQ"));
-	if (*name == NULL)
-		goto out;
+	name = get_device_prop (device, "NAME");
+	uniq = parse_uniq(get_device_prop(device, "UNIQ"));
+	if (name == NULL)
+		return FALSE;
 
 	/* Parse the PRODUCT attribute (for Bluetooth, USB, I2C) */
-	retval = get_bus_vid_pid (device, bus, vendor_id, product_id, error);
-	if (retval)
-		goto out;
+	if (!get_bus_vid_pid (device, &bus, &vendor_id, &product_id, error)) {
+		g_autofree char *bus_str = get_bus(device);
+		bus = bus_from_str(bus_str);
 
-	bus_str = get_bus (device);
-	*bus = bus_from_str (bus_str);
+		if (bus != WBUSTYPE_SERIAL) {
+			libwacom_error_set(error, WERROR_UNKNOWN_MODEL, "Unsupported bus '%s'", bus_str);
+			return FALSE;
+		}
 
-	if (*bus == WBUSTYPE_SERIAL) {
-		if (is_touchpad (device))
-			goto out;
-
-		/* The serial bus uses 0:0 as the vid/pid */
-		*vendor_id = 0;
-		*product_id = 0;
-		retval = TRUE;
-	} else {
-		libwacom_error_set(error, WERROR_UNKNOWN_MODEL, "Unsupported bus '%s'", bus_str);
+		if (!is_touchpad (device)) {
+			return FALSE;
+		} else {
+			/* The serial bus uses 0:0 as the vid/pid */
+			vendor_id = 0;
+			product_id = 0;
+		}
 	}
 
-out:
-	if (retval == FALSE) {
-		g_free (*name);
-		*name = NULL;
-		g_free (*uniq);
-		*uniq = NULL;
-	}
-	return retval;
+	*bus_out = bus;
+	*vendor_id_out = vendor_id;
+	*product_id_out = product_id;
+	*name_out = g_steal_pointer(&name);
+	*uniq_out = g_steal_pointer(&uniq);
+	*integration_flags_out = integration_flags;
+
+	return TRUE;
 }
 
 static WacomDevice *
@@ -788,7 +772,7 @@ libwacom_new_from_path(const WacomDeviceDatabase *db, const char *path, WacomFal
 	int vendor_id, product_id;
 	WacomBusType bus;
 	WacomDevice *device;
-	WacomIntegrationFlags integration_flags;
+	WacomIntegrationFlags integration_flags = WACOM_DEVICE_INTEGRATED_UNSET; // NOLINT: core.EnumCastOutOfRange
 	g_autofree char *name = NULL;
 	g_autofree char *uniq = NULL;
 	WacomBuilder *builder;
