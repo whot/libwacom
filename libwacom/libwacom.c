@@ -72,23 +72,16 @@ is_tablet_or_touchpad (GUdevDevice *device)
 static char *
 get_uinput_subsystem (GUdevDevice *device)
 {
-	const char *bus_str;
-	GUdevDevice *parent;
-
-
-	bus_str = NULL;
-	parent = g_object_ref (device);
+	const char *bus_str = NULL;
+	g_autoptr(GUdevDevice) parent = g_object_ref(device);
 
 	while (parent && !g_udev_device_get_property_as_boolean (parent, "UINPUT_DEVICE")) {
-		GUdevDevice *old_parent = parent;
+		g_autoptr(GUdevDevice) old_parent = g_steal_pointer(&parent);
 		parent = g_udev_device_get_parent (old_parent);
-		g_object_unref (old_parent);
 	}
 
-	if (parent) {
+	if (parent)
 		bus_str = g_udev_device_get_property (parent, "UINPUT_SUBSYSTEM");
-		g_object_unref (parent);
-	}
 
 	return bus_str ? g_strdup (bus_str) : NULL;
 }
@@ -100,7 +93,7 @@ get_bus_vid_pid (GUdevDevice  *device,
 		 int          *product_id,
 		 WacomError   *error)
 {
-	g_autoptr(GUdevDevice) parent = NULL;
+	g_autoptr(GUdevDevice) parent = g_object_ref(device);
 	const char *product_str;
 	g_auto(GStrv) splitted_product = NULL;
 	unsigned int bus_id;
@@ -111,15 +104,13 @@ get_bus_vid_pid (GUdevDevice  *device,
 	 * into:
 	 * vendor 0x56a
 	 * product 0x81 */
-	parent = g_object_ref (device);
 	product_str = g_udev_device_get_property (device, "PRODUCT");
 
 	while (!product_str && parent) {
-		GUdevDevice *old_parent = parent;
+		g_autoptr(GUdevDevice) old_parent = parent;
 		parent = g_udev_device_get_parent (old_parent);
 		if (parent)
 			product_str = g_udev_device_get_property (parent, "PRODUCT");
-		g_object_unref (old_parent);
 	}
 
 	if (!product_str)
@@ -164,22 +155,20 @@ get_bus (GUdevDevice *device)
 {
 	const char *subsystem;
 	char *bus_str;
-	GUdevDevice *parent;
+	g_autoptr(GUdevDevice) parent = g_object_ref(device);
 
 	bus_str = get_uinput_subsystem (device);
 	if (bus_str)
 		return bus_str;
 
 	subsystem = g_udev_device_get_subsystem (device);
-	parent = g_object_ref (device);
 
 	while (parent && subsystem &&
 	       (g_str_equal(subsystem, "input") || g_str_equal (subsystem, "hid"))) {
-		GUdevDevice *old_parent = parent;
+		g_autoptr(GUdevDevice) old_parent = parent;
 		parent = g_udev_device_get_parent (old_parent);
 		if (parent)
 			subsystem = g_udev_device_get_subsystem (parent);
-		g_object_unref (old_parent);
 	}
 
 	if (parent) {
@@ -187,8 +176,6 @@ get_bus (GUdevDevice *device)
 			bus_str = g_strdup ("serial");
 		else
 			bus_str = g_strdup (subsystem);
-
-		g_object_unref (parent);
 	} else
 		bus_str = strdup("unknown");
 
@@ -206,9 +193,9 @@ client_query_by_subsystem_and_device_file (GUdevClient *client,
 
 	devices = g_udev_client_query_by_subsystem (client, subsystem);
 	for (l = devices; l != NULL; l = l->next) {
-		if (!ret && g_strcmp0 (g_udev_device_get_device_file (l->data), path) == 0)
-			ret = g_object_ref (l->data);
-		g_object_unref (l->data);
+		g_autoptr(GUdevDevice) device = l->data;
+		if (!ret && g_strcmp0 (g_udev_device_get_device_file (device), path) == 0)
+			ret = g_object_ref (device);
 	}
 	return ret;
 }

@@ -67,7 +67,8 @@ print_device_info(const WacomDeviceDatabase *db, const WacomDevice *device)
 int main(int argc, char **argv)
 {
 	WacomDeviceDatabase *db;
-	WacomDevice **list, **p;
+	g_autofree WacomDevice **list;
+	WacomDevice **p;
 
 	if (argc > 1) {
 		printf("Usage: %s [--help] - list compatible styli\n",
@@ -87,7 +88,6 @@ int main(int argc, char **argv)
 		print_device_info(db, (WacomDevice *)*p);
 
 	libwacom_database_destroy(db);
-	g_free(list);
 
         return 0;
 }

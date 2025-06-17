@@ -470,7 +470,7 @@ int main(int argc, char **argv)
 
 	if (database_path) {
 		db = libwacom_database_new_for_path(database_path);
-		g_free (database_path);
+		g_clear_pointer (&database_path, g_free);
 	} else {
 #ifdef DATABASEPATH
 		db = libwacom_database_new_for_path(DATABASEPATH);
