@@ -7,12 +7,18 @@ permissions:
 
 env:
   CFLAGS: "-Werror -Wno-error=missing-field-initializers"
-  UBUNTU_PACKAGES: libgudev-1.0-dev libxml++2.6-dev valgrind tree python3-pip python3-setuptools libevdev-dev udev
-  PIP_PACKAGES: meson ninja libevdev pyudev pytest yq
 
 jobs:
+  containers:
+    uses: ./.github/workflows/containers.yml
+    permissions:
+      contents: read
+      packages: write
+
   build-and-dist:
+    needs: containers
     runs-on: ubuntu-24.04
+    container: ${{ needs.containers.outputs.ubuntu-image }}
     strategy:
       matrix:
         compiler:
@@ -20,20 +26,15 @@ jobs:
           - clang
     steps:
       - uses: actions/checkout@v4
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: ./.github/actions/pkginstall
-        with:
-          apt: $UBUNTU_PACKAGES
-          pip: $PIP_PACKAGES
+      # Not 100% sure why this is needed but dist fails otherwise even
+      # though actions/checkout is supposed to set this anyway
+      - run: git config --global safe.directory "*"
       - name: make /etc/udev/hwdb.d writable
         run: |
-          sudo mkdir -p /etc/udev/hwdb.d
-          sudo chmod o+rwx /etc/udev/hwdb.d
+          mkdir -p /etc/udev/hwdb.d
+          chmod o+rwx /etc/udev/hwdb.d
       - name: make systemd-hwdb sticky
-        run: sudo chmod +s /usr/bin/systemd-hwdb
+        run: chmod +s /usr/bin/systemd-hwdb
       - name: meson test ${{matrix.meson_options}}
         uses: ./.github/actions/meson
         env:
@@ -65,17 +66,11 @@ jobs:
   # clang-tidy
   #
   clang-tidy:
+    needs: containers
     runs-on: ubuntu-24.04
+    container: ${{ needs.containers.outputs.ubuntu-image }}
     steps:
       - uses: actions/checkout@v4
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: ./.github/actions/pkginstall
-        with:
-          apt: $UBUNTU_PACKAGES
-          pip: $PIP_PACKAGES
       - name: clang-tidy
         uses: ./.github/actions/meson
         with:
@@ -89,21 +84,15 @@ jobs:
   # valgrind run
   #
   valgrind:
+    needs: containers
     runs-on: ubuntu-24.04
+    container: ${{ needs.containers.outputs.ubuntu-image }}
     steps:
       - uses: actions/checkout@v4
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: ./.github/actions/pkginstall
-        with:
-          apt: $UBUNTU_PACKAGES
-          pip: $PIP_PACKAGES
       - name: make /etc/udev/hwdb.d writable
         run: |
-          sudo mkdir -p /etc/udev/hwdb.d
-          sudo chmod o+rwx /etc/udev/hwdb.d
+          mkdir -p /etc/udev/hwdb.d
+          chmod o+rwx /etc/udev/hwdb.d
       # for the valgrind case, we need custom setup, the matrix isn't
       # flexible enough for this
       - name: valgrind - meson test
@@ -123,46 +112,35 @@ jobs:
   ####
   # /etc/ loading check
   etcdir:
-    needs: build-and-dist
+    needs: [containers, build-and-dist]
     runs-on: ubuntu-24.04
+    container: ${{ needs.containers.outputs.ubuntu-image }}
     strategy:
       matrix:
         command:
           # A variety of ways to split the database across the two locations
           # we load from.
-          - sudo mv /usr/share/libwacom/wacom-intuos*.tablet /etc/libwacom
-          - sudo mv /usr/share/libwacom/*.tablet /etc/libwacom
-          - sudo mv /usr/share/libwacom/*.stylus /etc/libwacom
-          - sudo mv /usr/share/libwacom/*.tablet $HOME/.config/libwacom
-          - sudo mv /usr/share/libwacom/*.stylus $HOME/.config/libwacom
-          - sudo mv /usr/share/libwacom/wacom-*.tablet $HOME/.config/libwacom && sudo mv /usr/share/libwacom/huion-*.tablet /etc/libwacom
+          - mv /usr/share/libwacom/wacom-intuos*.tablet /etc/libwacom
+          - mv /usr/share/libwacom/*.tablet /etc/libwacom
+          - mv /usr/share/libwacom/*.stylus /etc/libwacom
+          - mv /usr/share/libwacom/*.tablet $HOME/.config/libwacom
+          - mv /usr/share/libwacom/*.stylus $HOME/.config/libwacom
+          - mv /usr/share/libwacom/wacom-*.tablet $HOME/.config/libwacom && mv /usr/share/libwacom/huion-*.tablet /etc/libwacom
           # split the wacom.stylus file into to two files to check for
           # accumlated loading
-          - sudo csplit data/wacom.stylus '/^\[0x56a:0x822\]/' && sudo mv xx00 /etc/libwacom/first.stylus && sudo mv xx01 /usr/share/libwacom/wacom.stylus
+          - csplit data/wacom.stylus '/^\[0x56a:0x822\]/' && mv xx00 /etc/libwacom/first.stylus && mv xx01 /usr/share/libwacom/wacom.stylus
 
     steps:
       - uses: actions/checkout@v4
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      # Run as sudo because we install to /etc and thus need the pip
-      # packages available to root
-      - uses: ./.github/actions/pkginstall
-        with:
-          apt: $UBUNTU_PACKAGES
-          pip: $PIP_PACKAGES
-          pip_precmd: sudo
       - uses: ./.github/actions/meson
         with:
-          meson_args: --prefix=/usr
+          meson_args: --prefix=/usr --libdir=/lib
           meson_skip_test: yes
           ninja_args: install
-          ninja_precmd: sudo
       - name: list devices with database in /usr
         run: libwacom-list-devices --format=datafile > devicelist.default.txt
-      - run: sudo mkdir /etc/libwacom
-      - run: sudo mkdir $HOME/.config/libwacom
+      - run: mkdir /etc/libwacom
+      - run: mkdir -p $HOME/.config/libwacom
       - name: split the databases between /usr/share and /etc
         run: ${{matrix.command}}
       - name: list devices with database in /etc and /usr
@@ -173,36 +151,25 @@ jobs:
   ####
   # duplicate device check
   duplicate-devices:
-    needs: build-and-dist
+    needs: [containers, build-and-dist]
     runs-on: ubuntu-24.04
+    container: ${{ needs.containers.outputs.ubuntu-image }}
     steps:
       - uses: actions/checkout@v4
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      # Run as sudo because we install to /etc and thus need the pip
-      # packages available to root
-      - uses: ./.github/actions/pkginstall
-        with:
-          apt: $UBUNTU_PACKAGES
-          pip: $PIP_PACKAGES
-          pip_precmd: sudo
       - uses: ./.github/actions/meson
         with:
-          meson_args: --prefix=/usr
+          meson_args: --prefix=/usr --libdir=/lib
           meson_skip_test: yes
           ninja_args: install
-          ninja_precmd: sudo
       - name: list devices with database in /usr
         run: libwacom-list-devices --format=yaml > devicelist.default.txt
-      - run: sudo mkdir /etc/libwacom
+      - run: mkdir /etc/libwacom
         # We override a Cintiq 27QHD with a single device match, and one of
         # the multiple matches of the Intuos Pro L.
       - name: copy and modify tablet files to override another one
         run: |
-          sed -e 's/27QHD/27QHD MODIFIED/' data/wacom-cintiq-27hd.tablet | sudo tee /etc/libwacom/wacom-cintiq-27hd.tablet
-          sed -e 's/Pro L/Pro L MODIFIED/' -e 's/usb|056a|0358;//' data/wacom-intuos-pro-2-l.tablet | sudo tee /etc/libwacom/wacom-intuos-pro-2-l.tablet
+          sed -e 's/27QHD/27QHD MODIFIED/' data/wacom-cintiq-27hd.tablet | tee /etc/libwacom/wacom-cintiq-27hd.tablet
+          sed -e 's/Pro L/Pro L MODIFIED/' -e 's/usb|056a|0358;//' data/wacom-intuos-pro-2-l.tablet | tee /etc/libwacom/wacom-intuos-pro-2-l.tablet
       - name: list all devices for debugging
         run: libwacom-list-devices --format=yaml
 
@@ -219,27 +186,16 @@ jobs:
   ####
   # duplicate device check
   list-local-devices:
-    needs: build-and-dist
+    needs: [containers, build-and-dist]
     runs-on: ubuntu-24.04
+    container: ${{ needs.containers.outputs.ubuntu-image }}
     steps:
       - uses: actions/checkout@v4
-      # install python so we get pip for meson
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      # Run as sudo because we install to /etc and thus need the pip
-      # packages available to root
-      - uses: ./.github/actions/pkginstall
-        with:
-          apt: $UBUNTU_PACKAGES
-          pip: $PIP_PACKAGES
-          pip_precmd: sudo
       - uses: ./.github/actions/meson
         with:
-          meson_args: --prefix=/usr
+          meson_args: --prefix=/usr --libdir=/lib
           meson_skip_test: yes
           ninja_args: install
-          ninja_precmd: sudo
       # We have no local devices so this doesn't do much beyond checking for segfaults
       - run: libwacom-list-local-devices
       - run: libwacom-list-local-devices --format=yaml
@@ -267,21 +223,14 @@ jobs:
   # tarball verification
   #
   build-from-tarball:
-    needs: build-and-dist
+    needs: [containers, build-and-dist]
     runs-on: ubuntu-24.04
+    container: ${{ needs.containers.outputs.ubuntu-image }}
     env:
       TARBALLDIR: '_tarball_dir'
       INSTALLDIR: '/tmp/libwacom/_inst'
     steps:
       - uses: actions/checkout@v4
-      - name: install python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: ./.github/actions/pkginstall
-        with:
-          apt: $UBUNTU_PACKAGES
-          pip: $PIP_PACKAGES
       - name: fetch tarball from previous job(s)
         uses: actions/download-artifact@v4
         with:

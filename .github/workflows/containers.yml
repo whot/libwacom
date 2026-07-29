@@ -1,0 +1,73 @@
+# Container image builds for CI.
+# Tags are defined here as env vars — bump a tag when its deps change.
+#
+# This workflow triggers on push when this file changes (so fork
+# contributors can build images in their fork's registry) and is
+# also callable from other .yml files via workflow_call.
+#
+# The check/build split means that when images are cached, only the
+# fast check jobs run.  Build jobs appear as "skipped" in the UI.
+# When a rebuild is needed, the build jobs run and are visible.
+#
+# This is complete overkill for libwacom but we do serve as a
+# test bed here for the container-prep action *because* our CI is
+# quite small.
+
+name: Containers
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - '.github/workflows/containers.yml'
+
+  workflow_call:
+    outputs:
+      ubuntu-image:
+        value: ${{ jobs.build-ubuntu.outputs.image || jobs.check-ubuntu.outputs.image }}
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  UBUNTU_TAG: '2026-07-29.7'
+  UBUNTU_VERSION: 'ubuntu:24.04'
+  UBUNTU_PACKAGES: libgudev-1.0-dev libxml++2.6-dev valgrind tree python3-pip python3-setuptools libevdev-dev udev gcc clang clang-tidy git xz-utils jq
+  PIP_PACKAGES: meson ninja libevdev pyudev pytest yq
+
+jobs:
+  # Separating check-<distro> and build-<distro> jobs means
+  # better UI feedback - unless the tag is bumped the build-<distro> jobs
+  # will show up as skipped, providing immediate visual feedback when
+  # a PR does change the containers.
+  check-ubuntu:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.check.outputs.image }}
+      build-needed: ${{ steps.check.outputs.build-needed }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: check
+        uses: whot/gh-ci-templates@4358dbab754a263cb5336e87cbe08f32cd6bb6d1
+        with:
+          base-image: ${{ env.UBUNTU_VERSION }}
+          tag: ${{ env.UBUNTU_TAG }}
+          check-only: 'true'  # only check, do not actually build
+
+  # This job is the one that builds the new container
+  build-ubuntu:
+    needs: check-ubuntu
+    if: needs.check-ubuntu.outputs.build-needed == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.prep.outputs.image }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: prep
+        uses: whot/gh-ci-templates@4358dbab754a263cb5336e87cbe08f32cd6bb6d1
+        with:
+          base-image: ${{ env.UBUNTU_VERSION }}
+          tag: ${{ env.UBUNTU_TAG }}
+          packages: ${{ env.UBUNTU_PACKAGES }}
+          exec: 'PIP_BREAK_SYSTEM_PACKAGES=1 pip install ${{ env.PIP_PACKAGES }}'
